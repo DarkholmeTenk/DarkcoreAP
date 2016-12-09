@@ -9,22 +9,31 @@ import javax.annotation.processing.Messager;
 import javax.annotation.processing.ProcessingEnvironment;
 import javax.annotation.processing.Processor;
 import javax.annotation.processing.RoundEnvironment;
+import javax.annotation.processing.SupportedSourceVersion;
+import javax.lang.model.SourceVersion;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.TypeElement;
+import javax.lang.model.util.Elements;
 import javax.tools.Diagnostic.Kind;
 
 import com.google.auto.service.AutoService;
 
 @AutoService(Processor.class)
+@SupportedSourceVersion(SourceVersion.RELEASE_8)
 public final class CommonProxyGenerator extends AbstractProcessor
 {
 	private Messager messager;
+	private TypeElement annot;
+	
+	private Elements eutils;
 	
 	@Override
 	public void init(ProcessingEnvironment environment)
 	{
 		super.init(environment);
 		messager = environment.getMessager();
+		eutils = environment.getElementUtils();
+		annot = environment.getElementUtils().getTypeElement(CommonProxy.class.getName());
 	}
 
 	@Override
@@ -32,7 +41,23 @@ public final class CommonProxyGenerator extends AbstractProcessor
 	{
 		Set<? extends Element> elements = roundEnv.getElementsAnnotatedWith(CommonProxy.class);
 		for(Element e : elements)
-			messager.printMessage(Kind.ERROR, e.getAnnotation(CommonProxy.class).toString(), e);
+		{
+			TypeElement te = (TypeElement)e;
+			String name = eutils.getBinaryName(te).toString();
+			messager.printMessage(Kind.WARNING, name, e);
+			messager.printMessage(Kind.NOTE, "Note?");
+			for(Element e2 : e.getEnclosedElements())
+			{
+				ClientMethod cm = e2.getAnnotation(ClientMethod.class);
+				if(cm == null)
+					continue;
+				name = e2.getSimpleName().toString();
+				messager.printMessage(Kind.WARNING, name, e2);
+			}
+		}
+		
+		if(annotations.contains(annot))
+			return true;
 		return false;
 	}
 
