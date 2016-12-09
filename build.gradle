@@ -1,0 +1,37 @@
+repositories {
+	mavenCentral()
+}
+
+apply plugin: 'eclipse'
+apply plugin: 'java'
+apply plugin: 'maven-publish'
+
+sourceCompatibility = 1.8
+targetCompatibility = 1.8
+
+version='0.0.1-SNAPSHOT'
+
+dependencies {
+	runtime group: 'com.google.guava', name: 'guava', version: '20.0'
+}
+
+artifacts {
+	archives jar
+}
+
+publishing {
+        publications {
+                mavenJava(MavenPublication){
+                        groupId 'io.darkcraft'
+                        artifactId 'darkcoreAP'
+                        version project.version
+			from components.java
+                }
+        }
+        repositories {
+                maven {
+                        url "/home/web/maven"
+                }
+        }
+}
+
