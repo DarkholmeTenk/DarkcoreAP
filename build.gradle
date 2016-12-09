@@ -11,8 +11,19 @@ targetCompatibility = 1.8
 
 version='0.0.1-SNAPSHOT'
 
+buildscript {
+	repositories {
+		mavenCentral()
+	}
+	dependencies {
+		classpath 'com.google.auto.service:auto-service:1.0-rc2'
+	}
+}
+
 dependencies {
 	runtime group: 'com.google.guava', name: 'guava', version: '20.0'
+	runtime 'com.squareup:javapoet:1.8.0'
+	compile group: 'com.google.auto.service', name: 'auto-service', version: '1.0-rc2'
 }
 
 artifacts {
@@ -21,7 +32,7 @@ artifacts {
 
 publishing {
         publications {
-                mavenJava(MavenPublication){
+                main(MavenPublication){
                         groupId 'io.darkcraft'
                         artifactId 'darkcoreAP'
                         version project.version
