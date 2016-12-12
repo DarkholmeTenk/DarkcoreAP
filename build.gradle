@@ -22,6 +22,7 @@ buildscript {
 
 dependencies {
 	runtime group: 'com.google.guava', name: 'guava', version: '20.0'
+	compile 'com.squareup:javapoet:1.8.0'
 	runtime 'com.squareup:javapoet:1.8.0'
 	compile group: 'com.google.auto.service', name: 'auto-service', version: '1.0-rc2'
 }

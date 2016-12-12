@@ -9,5 +9,19 @@ import java.lang.annotation.Target;
 @Retention(CLASS)
 @Target(METHOD)
 public @interface ClientMethod {
+	
+	Broadcast broadcast() default Broadcast.ALL;
 
+	public enum Broadcast
+	{
+		ALL(false),
+		DIMENSION(true),
+		PLAYER(true);
+		
+		public final boolean skipFirst;
+		private Broadcast(boolean skipFirst)
+		{
+			this.skipFirst = skipFirst;
+		}
+	}
 }
