@@ -24,6 +24,7 @@ import com.google.auto.service.AutoService;
 import com.google.common.collect.Sets;
 import com.squareup.javapoet.JavaFile;
 import com.squareup.javapoet.MethodSpec;
+import com.squareup.javapoet.TypeName;
 import com.squareup.javapoet.TypeSpec;
 
 @AutoService(Processor.class)
@@ -32,6 +33,7 @@ public final class CommonProxyGenerator extends AbstractProcessor
 {
 	private static final String NBT = "net.minecraft.nbt.NBTTagCompound";
 	private static final String PACKET = "io.darkcraft.darkcore.mod.handlers.packets.ProxyHandler";
+	private static final String SERTYP = "io.darkcraft.darkcore.mod.nbt.NBTProperty.SerialisableType";
 	
 	private Messager messager;
 	private TypeElement annot;
@@ -84,23 +86,28 @@ public final class CommonProxyGenerator extends AbstractProcessor
 	private void buildClass(TypeElement te, Set<ExecutableElement> methods)
 	{
 		String packageName = eutils.getPackageOf(te).getQualifiedName().toString();
-		String newName = eutils.getBinaryName(te).toString()+"Impl";
+		String newName = te.getSimpleName().toString() + "Impl";
 		messager.printMessage(Kind.WARNING, packageName + "  -  " + newName); 
 		try {
 			
 			TypeSpec.Builder clazz = TypeSpec.classBuilder(newName)
+					.superclass(TypeName.get(te.asType()))
 					.addModifiers(Modifier.PUBLIC, Modifier.FINAL);
 			for(ExecutableElement method : methods)
 			{
 				ClientMethod annot = method.getAnnotation(ClientMethod.class);
 				MethodSpec.Builder b = MethodSpec.overriding(method);
-				b.addStatement("%s tag = io.darkcraft.darkcore.mod.nbt.NBTHelper.serialise(%s)",
-						NBT, MethodHelper.getParametersNames(method, annot.broadcast().skipFirst));
+				String params = MethodHelper.getParametersNames(method, annot.broadcast().skipFirst);
+				if(!params.isEmpty())
+					b.addStatement("$L tag = io.darkcraft.darkcore.mod.nbt.NBTHelper.serialise($L.TRANSMIT, $L)",
+						NBT, SERTYP, MethodHelper.getParametersNames(method, annot.broadcast().skipFirst));
+				else
+					b.addStatement("$L tag = new $L()", NBT, NBT);
 				switch(annot.broadcast())
 				{
-				case ALL: b.addStatement("%s.sendToAll(tag)", PACKET);
-				case DIMENSION: b.addStatement("%s.sendToDimension(%s, tag)", PACKET, MethodHelper.getFirstParameter(method));
-				case PLAYER: b.addStatement("%s.sendToPlayer(%s, %tag)", PACKET, MethodHelper.getFirstParameter(method));
+				case ALL: b.addStatement("$L.sendToAll(tag)", PACKET); break;
+				case DIMENSION: b.addStatement("$L.sendToDimension($L, tag)", PACKET, MethodHelper.getFirstParameter(method)); break;
+				case PLAYER: b.addStatement("$L.sendToPlayer($L, %tag)", PACKET, MethodHelper.getFirstParameter(method)); break;
 				}
 				clazz.addMethod(b.build());
 			}

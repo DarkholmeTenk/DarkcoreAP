@@ -23,6 +23,6 @@ public class MethodHelper
 	{
 		for(VariableElement v : method.getParameters())
 			return v.getSimpleName().toString();
-		throw new RuntimeException("No first method could be found");
+		throw new RuntimeException("No first parameter could be found");
 	}
 }
