@@ -27,23 +27,27 @@ dependencies {
 	compile group: 'com.google.auto.service', name: 'auto-service', version: '1.0-rc2'
 }
 
+jar {
+	from sourceSets.main.allSource
+}
+
 artifacts {
 	archives jar
 }
 
 publishing {
-        publications {
-                main(MavenPublication){
-                        groupId 'io.darkcraft'
-                        artifactId 'darkcoreAP'
-                        version project.version
+	publications {
+		main(MavenPublication){
+			groupId 'io.darkcraft'
+			artifactId 'darkcoreAP'
+			version project.version
 			from components.java
-                }
-        }
-        repositories {
-                maven {
-                        url "/home/web/maven"
-                }
-        }
+		}
+	}
+	repositories {
+		maven {
+			url "/home/web/maven"
+		}
+	}
 }
 
