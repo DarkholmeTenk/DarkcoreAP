@@ -21,6 +21,8 @@ import javax.lang.model.util.Elements;
 import javax.tools.Diagnostic.Kind;
 
 import com.google.auto.service.AutoService;
+import com.google.common.collect.HashMultiset;
+import com.google.common.collect.Multiset;
 import com.google.common.collect.Sets;
 import com.squareup.javapoet.ClassName;
 import com.squareup.javapoet.JavaFile;
@@ -49,7 +51,7 @@ public final class CommonProxyGenerator extends AbstractProcessor
 		super.init(environment);
 		messager = environment.getMessager();
 		eutils = environment.getElementUtils();
-		annot = environment.getElementUtils().getTypeElement(CommonProxy.class.getName());
+		annot = eutils.getTypeElement(CommonProxy.class.getName());
 		filer = environment.getFiler();
 		NBT = ClassName.get("net.minecraft.nbt", "NBTTagCompound");
 		PACKET = ClassName.get("io.darkcraft.darkcore.mod.handlers.packets", "ProxyHandler");
@@ -65,22 +67,24 @@ public final class CommonProxyGenerator extends AbstractProcessor
 		{
 			TypeElement te = (TypeElement)e;
 			String name = eutils.getBinaryName(te).toString();
-			messager.printMessage(Kind.WARNING, name, e);
-			messager.printMessage(Kind.NOTE, "Note?");
+			//messager.printMessage(Kind.WARNING, name, e);
+			messager.printMessage(Kind.NOTE, "Generating proxy for " + name + " to " + name+"Impl");
 			Set<ExecutableElement> methods = Sets.newLinkedHashSet();
+			Multiset<String> methodNames = HashMultiset.create();
 			for(Element e2 : e.getEnclosedElements())
 			{
 				if(e2 instanceof ExecutableElement)
 				{
-					
+					methodNames.add(e2.getSimpleName().toString());
 					ClientMethod cm = e2.getAnnotation(ClientMethod.class);
 					if(cm == null)
 						continue;
-					name = e2.getSimpleName().toString();
-					messager.printMessage(Kind.WARNING, name, e2);
 					methods.add((ExecutableElement) e2);
 				}
 			}
+			for(ExecutableElement method : methods)
+				if(methodNames.count(method.getSimpleName().toString()) > 1)
+					messager.printMessage(Kind.ERROR, "Methods with @ClientMethod must have unique names", method);
 			buildClass(te, methods);
 		}
 		
@@ -93,7 +97,7 @@ public final class CommonProxyGenerator extends AbstractProcessor
 	{
 		String packageName = eutils.getPackageOf(te).getQualifiedName().toString();
 		String newName = te.getSimpleName().toString() + "Impl";
-		messager.printMessage(Kind.WARNING, packageName + "  -  " + newName); 
+		//messager.printMessage(Kind.WARNING, packageName + "  -  " + newName); 
 		try {
 			
 			TypeSpec.Builder clazz = TypeSpec.classBuilder(newName)
@@ -103,10 +107,10 @@ public final class CommonProxyGenerator extends AbstractProcessor
 			{
 				ClientMethod annot = method.getAnnotation(ClientMethod.class);
 				MethodSpec.Builder b = MethodSpec.overriding(method);
-				String params = MethodHelper.getParametersNames(method, annot.broadcast().skipFirst);
+				String params = MethodHelper.getParametersNames(method);
 				if(!params.isEmpty())
 					b.addStatement("$T tag = $T.serialise($T.$L, $L)", NBT, NBTHLP, SERTYP,
-						annot.serialisableType(), MethodHelper.getParametersNames(method, annot.broadcast().skipFirst));
+						annot.serialisableType(), MethodHelper.getParametersNames(method));
 				else
 					b.addStatement("$T tag = new $T()", NBT, NBT);
 				b.addStatement("tag.setString($S, $S)", "method", method.getSimpleName());
@@ -123,7 +127,7 @@ public final class CommonProxyGenerator extends AbstractProcessor
 			
 			JavaFile jf = JavaFile.builder(packageName, clazz.build())
 					.build();
-			jf.writeTo(System.out);
+			//jf.writeTo(System.out);
 			jf.writeTo(filer);
 		}
 		catch(IOException e)

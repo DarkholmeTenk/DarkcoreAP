@@ -10,12 +10,11 @@ import com.google.common.base.Joiner;
 
 public class MethodHelper
 {
-	public static String getParametersNames(ExecutableElement method, boolean skipFirst)
+	public static String getParametersNames(ExecutableElement method)
 	{
 		List<String> variables = new ArrayList<>();
 		for(VariableElement v : method.getParameters())
-			if(skipFirst && !(skipFirst = false))
-				variables.add(v.getSimpleName().toString());
+			variables.add(v.getSimpleName().toString());
 		return Joiner.on(", ").join(variables);
 	}
 	
