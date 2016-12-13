@@ -22,6 +22,7 @@ import javax.tools.Diagnostic.Kind;
 
 import com.google.auto.service.AutoService;
 import com.google.common.collect.Sets;
+import com.squareup.javapoet.ClassName;
 import com.squareup.javapoet.JavaFile;
 import com.squareup.javapoet.MethodSpec;
 import com.squareup.javapoet.TypeName;
@@ -31,9 +32,10 @@ import com.squareup.javapoet.TypeSpec;
 @SupportedSourceVersion(SourceVersion.RELEASE_8)
 public final class CommonProxyGenerator extends AbstractProcessor
 {
-	private static final String NBT = "net.minecraft.nbt.NBTTagCompound";
-	private static final String PACKET = "io.darkcraft.darkcore.mod.handlers.packets.ProxyHandler";
-	private static final String SERTYP = "io.darkcraft.darkcore.mod.nbt.NBTProperty.SerialisableType";
+	private static ClassName NBT;
+	private static ClassName PACKET;
+	private static ClassName SERTYP;
+	private static ClassName NBTHLP;
 	
 	private Messager messager;
 	private TypeElement annot;
@@ -49,6 +51,10 @@ public final class CommonProxyGenerator extends AbstractProcessor
 		eutils = environment.getElementUtils();
 		annot = environment.getElementUtils().getTypeElement(CommonProxy.class.getName());
 		filer = environment.getFiler();
+		NBT = ClassName.get("net.minecraft.nbt", "NBTTagCompound");
+		PACKET = ClassName.get("io.darkcraft.darkcore.mod.handlers.packets", "ProxyHandler");
+		SERTYP = ClassName.get("io.darkcraft.darkcore.mod.nbt", "NBTProperty", "SerialisableType");
+		NBTHLP = ClassName.get("io.darkcraft.darkcore.mod.nbt", "NBTHelper");
 	}
 
 	@Override
@@ -99,15 +105,18 @@ public final class CommonProxyGenerator extends AbstractProcessor
 				MethodSpec.Builder b = MethodSpec.overriding(method);
 				String params = MethodHelper.getParametersNames(method, annot.broadcast().skipFirst);
 				if(!params.isEmpty())
-					b.addStatement("$L tag = io.darkcraft.darkcore.mod.nbt.NBTHelper.serialise($L.TRANSMIT, $L)",
-						NBT, SERTYP, MethodHelper.getParametersNames(method, annot.broadcast().skipFirst));
+					b.addStatement("$T tag = $T.serialise($T.$L, $L)", NBT, NBTHLP, SERTYP,
+						annot.serialisableType(), MethodHelper.getParametersNames(method, annot.broadcast().skipFirst));
 				else
-					b.addStatement("$L tag = new $L()", NBT, NBT);
+					b.addStatement("$T tag = new $T()", NBT, NBT);
+				b.addStatement("tag.setString($S, $S)", "method", method.getSimpleName());
+				b.addStatement("tag.setString(\"myClass\", $S)", eutils.getBinaryName(te));
+				b.addStatement("tag.setInteger($S, $L);", "size", params.length());
 				switch(annot.broadcast())
 				{
-				case ALL: b.addStatement("$L.sendToAll(tag)", PACKET); break;
-				case DIMENSION: b.addStatement("$L.sendToDimension($L, tag)", PACKET, MethodHelper.getFirstParameter(method)); break;
-				case PLAYER: b.addStatement("$L.sendToPlayer($L, %tag)", PACKET, MethodHelper.getFirstParameter(method)); break;
+				case ALL: b.addStatement("$T.sendToAll(tag)", PACKET); break;
+				case DIMENSION: b.addStatement("$T.sendToDimension($L, tag)", PACKET, MethodHelper.getFirstParameter(method)); break;
+				case PLAYER: b.addStatement("$T.sendToPlayer($L, tag)", PACKET, MethodHelper.getFirstParameter(method)); break;
 				}
 				clazz.addMethod(b.build());
 			}

@@ -11,8 +11,10 @@ import java.lang.annotation.Target;
 public @interface ClientMethod {
 	
 	Broadcast broadcast() default Broadcast.ALL;
+	
+	String serialisableType() default "TRANSMIT";
 
-	public enum Broadcast
+	public static enum Broadcast
 	{
 		ALL(false),
 		DIMENSION(true),
