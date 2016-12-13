@@ -115,7 +115,6 @@ public final class CommonProxyGenerator extends AbstractProcessor
 					b.addStatement("$T tag = new $T()", NBT, NBT);
 				b.addStatement("tag.setString($S, $S)", "method", method.getSimpleName());
 				b.addStatement("tag.setString(\"myClass\", $S)", eutils.getBinaryName(te));
-				b.addStatement("tag.setInteger($S, $L);", "size", params.length());
 				switch(annot.broadcast())
 				{
 				case ALL: b.addStatement("$T.sendToAll(tag)", PACKET); break;
